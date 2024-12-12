@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+  "name": "Extrator Infoseg",
+  "version": "2.3",
+  "description": "Extrai elementos do Infoseg para tratamento",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "downloads"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "browser_action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}
