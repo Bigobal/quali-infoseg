@@ -45,6 +45,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       const documentoElement = document.getElementById('tab-p0-SRV_CONDUTORES-0-documentoCondutor');
       const carElement = document.getElementById('p0-SRV_VEICULOS-lista');
       const novoElement = document.getElementById('p0-SRV_PESSOAFISICA-0-detalhe');
+      const novoElement1 = document.getElementById('tab-p0-SRV_CONDUTORES-0-detalhesCondutor');
 
       if (mainElement || documentoElement || carElement || novoElement) {
         console.log("Elementos principais encontrados.");
@@ -64,7 +65,11 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
         }
 
         const textoPessoaFisica = pessoaFisicaElement.textContent.trim();
-
+        const endereco1 = getTextByLabel(novoElement1, 'Endereço');
+        const endereco2 = getTextByLabel(novoElement, 'Endereço');
+        function extractNumbers(text) {
+            return text.replace(/\D/g, '');
+        }
         const pessoaInfo = {
           NNNN: capitalizeFirstLetter(textoPessoaFisica),
           MMM: capitalizeFirstLetter(getTextByLabel(novoElement, 'Filiação 1')),
@@ -73,15 +78,34 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
           PPP: capitalizeFirstLetter(getTextByLabel(mainElement, 'Filiação 2')),
           SSSS: capitalizeFirstLetter(getTextByLabel(novoElement, 'Sexo')),
           N8C: capitalizeFirstLetter(getTextByLabel(mainElement, 'Nacionalidade')),
-          N8D: capitalizeFirstLetter(getTextByLabel(novoElement, 'Endereço')),
-          R8R: capitalizeFirstLetter(getTextByLabel(documentoElement, 'Documento')),
+          N8D: endereco1 ? capitalizeFirstLetter(endereco1) : capitalizeFirstLetter(endereco2),
+          N7D8: endereco1 ? capitalizeFirstLetter(endereco2) : "",
+          R8R: extractNumbers(capitalizeFirstLetter(getTextByLabel(documentoElement, 'Documento'))),
           O8E: getTextByLabel(documentoElement, 'Órgão Emissor/UF'),
         };
 
         console.log("Dados extraídos:", pessoaInfo);
+        function formatVeiculos(veiculosText) {
+          if (!veiculosText) return "";
+          const dados = veiculosText.startsWith('-') ? veiculosText.substring(1).split('--') : veiculosText.split('--');
+          const veiculos = [];
+          for (let i = 0; i < dados.length; i += 7) {
+              if (i + 6 >= dados.length) break;
+              const placa = dados[i].trim();
+              const [marca, ...modeloArray] = dados[i + 2].trim().split('/');
+              const marcaFormatada = marca.charAt(0).toUpperCase() + marca.slice(1).toLowerCase();
+              const modeloFormatado = modeloArray.join(' ')
+                  .toLowerCase()
+                  .replace(/\b\w/g, char => char.toUpperCase());
+              const cor = dados[i + 3].trim().toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+              const ano = dados[i + 4].trim();
+              veiculos.push(`${placa} / ${marcaFormatada} ${modeloFormatado} ${cor} ${ano}`);
+          }
+          return veiculos.join('; ');
+        }
 
         const veiculosText = carElement ? carElement.innerText.replace(/\n/g, '-').substring(109) : '';
-        console.log("Texto de veículos extraído:", veiculosText);
+        console.log("Texto de veículos extraído:", formatVeiculos(veiculosText));
 
         let imageBase64 = '';
         if (mainElement) {
@@ -93,9 +117,9 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
         console.log("Imagem base64 extraída:", imageBase64);
 
-        const txtContent = `NNNN: ${pessoaInfo.NNNN}\nMMM: ${pessoaInfo.MMM}\nCCC: ${pessoaInfo.CCC}\nD8N: ${pessoaInfo.D8N}\nPPP: ${pessoaInfo.PPP}\nSSSS: ${pessoaInfo.SSSS}\nN8C: ${pessoaInfo.N8C}\nN8D: ${pessoaInfo.N8D}\nR8R: ${pessoaInfo.R8R}\nO8E: ${pessoaInfo.O8E}\nV8I: ${veiculosText}\nImagem: ${imageBase64}`;
+        const txtContent = `NNNN: ${pessoaInfo.NNNN}\nMMM: ${pessoaInfo.MMM}\nCCC: ${pessoaInfo.CCC}\nD8N: ${pessoaInfo.D8N}\nPPP: ${pessoaInfo.PPP}\nSSSS: ${pessoaInfo.SSSS}\nN8C: ${pessoaInfo.N8C}\nN8D: ${pessoaInfo.N8D}\nN7D8: ${pessoaInfo.N7D8}\nR8R: ${pessoaInfo.R8R}\nO8E: ${pessoaInfo.O8E}\nV8I: ${formatVeiculos(veiculosText)}\nImagem: ${imageBase64}`;
 
-        chrome.runtime.sendMessage({ action: 'saveData', data: txtContent, image: imageBase64 }, function(response) {
+        chrome.runtime.sendMessage({ action: 'saveData', filename: pessoaInfo.NNNN ? `${pessoaInfo.NNNN}.txt` : 'dados_extracao.txt', data: txtContent, image: imageBase64 }, function(response) {
           console.log("Dados enviados para o background script.");
         });
 
