@@ -5,6 +5,7 @@ from docx.shared import Inches
 import base64
 from PIL import Image
 import io
+import os
 
 def ler_dados_txt(caminho_txt):
     dados = {}
@@ -51,7 +52,8 @@ def substituir_imagem(doc, imagem_base64):
         messagebox.showerror("Erro", f"Ocorreu um erro ao processar a imagem: {str(e)}")
 
 def modificar_documento(caminho_txt):
-    caminho_docx = 'qualificação geral.docx'  # Caminho fixo para o documento do Word
+    caminho_base = os.path.dirname(os.path.abspath(__file__))
+    caminho_docx = os.path.join(caminho_base, "qualificação geral.docx")
 
     dados = ler_dados_txt(caminho_txt)
 
@@ -62,10 +64,16 @@ def modificar_documento(caminho_txt):
     if 'Imagem' in dados:
         substituir_imagem(doc, dados['Imagem'])
 
-    caminho_docx_modificado = 'qualificação_geral_modificado.docx'
-    doc.save(caminho_docx_modificado)
+    nome_arquivo = dados.get('NNNN', 'documento_modificado').strip()
+    nome_arquivo = nome_arquivo.replace('/', '-')
+    caminho_docx_modificado = f"{nome_arquivo}.docx"
+
+    caminho_saida = os.path.join(caminho_base, f"{nome_arquivo}.docx")
+    doc.save(caminho_saida)
+
 
     messagebox.showinfo("Sucesso", f"Documento gerado salvo em: {caminho_docx_modificado}")
+
 
 def selecionar_arquivo_dados():
     caminho_txt = filedialog.askopenfilename(title="Selecione o arquivo de dados", filetypes=[("Text files", "*.txt")])
