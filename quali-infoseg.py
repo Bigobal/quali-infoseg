@@ -6,6 +6,7 @@ import base64
 from PIL import Image
 import io
 import os
+import sys
 
 def ler_dados_txt(caminho_txt):
     dados = {}
@@ -53,6 +54,11 @@ def substituir_imagem(doc, imagem_base64):
 
 def modificar_documento(caminho_txt):
     caminho_base = os.path.dirname(os.path.abspath(__file__))
+    if getattr(sys, 'frozen', False):
+        caminho_base = sys._MEIPASS
+    else:
+        caminho_base = os.path.dirname(os.path.abspath(__file__))
+
     caminho_docx = os.path.join(caminho_base, "qualificação geral.docx")
 
     dados = ler_dados_txt(caminho_txt)
@@ -68,11 +74,13 @@ def modificar_documento(caminho_txt):
     nome_arquivo = nome_arquivo.replace('/', '-')
     caminho_docx_modificado = f"{nome_arquivo}.docx"
 
-    caminho_saida = os.path.join(caminho_base, f"{nome_arquivo}.docx")
+    caminho_saida_base = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+    caminho_saida = os.path.join(caminho_saida_base, f"{nome_arquivo}.docx")
     doc.save(caminho_saida)
 
 
-    messagebox.showinfo("Sucesso", f"Documento gerado salvo em: {caminho_docx_modificado}")
+    messagebox.showinfo("Sucesso", f"Documento gerado salvo em: {caminho_saida}")
+
 
 
 def selecionar_arquivo_dados():
